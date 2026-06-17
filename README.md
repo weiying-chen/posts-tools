@@ -6,6 +6,8 @@ Post-generation tooling.
 
 - `gen_posts.sh`: generate `_al.docx` post files from a schedule `.docx`.
 - `highlight_posts`: turn paired `*text*` markers in generated post DOCX files into bright-green highlights.
+- `check_posts`: verify each post contains `Let's take a listen!` and `一起來聽聽！`.
+- `finalize_posts`: run highlighting first, then run the phrase checker.
 
 ## Usage
 
@@ -38,4 +40,16 @@ Pass files or folders explicitly if needed:
 
 ```bash
 /home/weiying/python/posts-tools/highlight_posts /path/to/output
+```
+
+Check generated posts for required phrases:
+
+```bash
+/home/weiying/python/posts-tools/check_posts
+```
+
+Run the full finalization flow:
+
+```bash
+/home/weiying/python/posts-tools/finalize_posts
 ```

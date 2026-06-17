@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+PYTHON_BIN="${FINALIZE_POSTS_PYTHON:-${CHECK_POSTS_PYTHON:-${HIGHLIGHT_POSTS_PYTHON:-${GENERATE_POSTS_PYTHON:-$HOME/python/word/.venv/bin/python}}}}"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  echo "[error] python binary not executable: $PYTHON_BIN" >&2
+  echo "[info] set FINALIZE_POSTS_PYTHON to a Python with python-docx installed" >&2
+  exit 1
+fi
+
+"$PYTHON_BIN" "$SCRIPT_DIR/finalize_posts.py" "$@"

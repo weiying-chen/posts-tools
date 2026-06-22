@@ -55,9 +55,6 @@ Run the full finalization flow:
 /home/weiying/python/posts-tools/finalize_posts
 ```
 
-By default this finalizes in place in the working folder:
-- `*_al.docx` is renamed to `*_final.docx`
-- `*_final.docx` stays `*_final.docx`
-- other filenames become `*_final.docx`
-
+By default this finalizes in place and keeps the existing filename, including `*_al.docx`.
 Use `--copy` to keep the source file and write a separate finalized file instead.
+Without a custom `--suffix`, copy mode writes `*_finalized.docx`.

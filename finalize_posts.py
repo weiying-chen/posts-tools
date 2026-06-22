@@ -35,7 +35,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--suffix",
         default=None,
         help=(
-            "Suffix for side-by-side output. Default is no suffix unless --copy is used."
+            "Suffix for side-by-side copy output. "
+            "Default is '_finalized' when --copy is used."
         ),
     )
     parser.add_argument(
@@ -51,22 +52,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def finalized_name_for(source: Path) -> str:
-    if source.stem.endswith("_al"):
-        return f"{source.stem[:-3]}_final{source.suffix}"
-    if source.stem.endswith("_final"):
-        return source.name
-    return f"{source.stem}_final{source.suffix}"
-
-
 def destination_for(source: Path, args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
-        return args.output_dir / finalized_name_for(source)
+        return args.output_dir / source.name
     if args.copy:
-        if args.suffix is not None:
-            return output_path_for(source, None, args.suffix)
-        return source.with_name(finalized_name_for(source))
-    return source.with_name(finalized_name_for(source))
+        return output_path_for(source, None, args.suffix or "_finalized")
+    return source
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -80,11 +71,11 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[not-found] {source}", file=sys.stderr)
+            print(f"[file-not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
+            print(f"[not-docx] {source}", file=sys.stderr)
             continue
 
         destination = destination_for(source, args)
@@ -92,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[target] {source} -> {destination}")
             continue
 
-        changed, skipped = highlight_docx(source, destination)
+        changed, _skipped = highlight_docx(source, destination)
         if not changed and destination != source:
             destination.parent.mkdir(parents=True, exist_ok=True)
             if args.copy or args.output_dir is not None:
@@ -103,11 +94,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[highlighted] {destination} ({changed} paragraph(s))")
         else:
             print(f"[no-highlights] {destination}")
-        if skipped:
-            print(
-                f"[skipped-hyperlinks] {source} ({skipped} paragraph(s))",
-                file=sys.stderr,
-            )
 
         check_path = destination if destination.exists() else source
         missing = find_missing_phrases(check_path)
@@ -117,17 +103,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[check-failed] {check_path}: {joined}")
         else:
             print(f"[check-passed] {check_path}")
-
-        if (
-            changed
-            and not args.copy
-            and args.output_dir is None
-            and destination != source
-            and destination.exists()
-            and source.exists()
-        ):
-            source.unlink()
-            print(f"[renamed] {source} -> {destination}")
 
     return exit_code
 

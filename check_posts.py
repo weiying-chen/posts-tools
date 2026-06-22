@@ -80,11 +80,11 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[not-found] {source}", file=sys.stderr)
+            print(f"[file-not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
+            print(f"[not-docx] {source}", file=sys.stderr)
             continue
 
         missing = find_missing_phrases(source)

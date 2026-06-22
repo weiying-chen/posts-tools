@@ -62,11 +62,11 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[not-found] {source}", file=sys.stderr)
+            print(f"[file-not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
+            print(f"[not-docx] {source}", file=sys.stderr)
             continue
 
         destination = output_path_for(source, args.output_dir, suffix)
@@ -74,16 +74,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[target] {source} -> {destination}")
             continue
 
-        changed, skipped = highlight_docx(source, destination)
+        changed, _skipped = highlight_docx(source, destination)
         if changed:
             print(f"[highlighted] {destination} ({changed} paragraph(s))")
         else:
             print(f"[no-highlights] {destination}")
-        if skipped:
-            print(
-                f"[skipped-hyperlinks] {source} ({skipped} paragraph(s))",
-                file=sys.stderr,
-            )
 
     return exit_code
 

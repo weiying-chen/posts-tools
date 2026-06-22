@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import sys
 from pathlib import Path
 
@@ -16,9 +17,26 @@ except ImportError as exc:  # pragma: no cover - depends on local environment
 
 from posts_common import resolve_targets
 
-REQUIRED_PHRASES = (
-    "Let's take a listen!",
-    "一起來聽聽！",
+
+@dataclass(frozen=True)
+class RequiredPhraseGroup:
+    display: str
+    variants: tuple[str, ...]
+
+
+def phrase_variants(base: str, punctuation: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(f"{base}{mark}" for mark in punctuation)
+
+
+REQUIRED_PHRASE_GROUPS = (
+    RequiredPhraseGroup(
+        display="Let's take a listen! or Let's take a listen.",
+        variants=phrase_variants("Let's take a listen", ("!", ".")),
+    ),
+    RequiredPhraseGroup(
+        display="一起來聽聽！或一起來聽聽。",
+        variants=phrase_variants("一起來聽聽", ("！", "。")),
+    ),
 )
 
 
@@ -43,7 +61,12 @@ def read_docx_text(path: Path) -> str:
 
 def find_missing_phrases(path: Path) -> list[str]:
     text = read_docx_text(path)
-    return [phrase for phrase in REQUIRED_PHRASES if phrase not in text]
+    if any(variant in text for group in REQUIRED_PHRASE_GROUPS for variant in group.variants):
+        return []
+
+    return [
+        "Let's take a listen! or Let's take a listen. / 一起來聽聽！或一起來聽聽。"
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,21 +80,21 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[error] not found: {source}", file=sys.stderr)
+            print(f"[not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skip] not a .docx file: {source}", file=sys.stderr)
+            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
             continue
 
         missing = find_missing_phrases(source)
         if missing:
             exit_code = 1
             joined = ", ".join(repr(item) for item in missing)
-            print(f"[missing] {source}: {joined}")
+            print(f"[check-failed] {source}: {joined}")
             continue
 
-        print(f"[ok] {source}")
+        print(f"[check-passed] {source}")
 
     return exit_code
 

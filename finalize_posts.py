@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -32,11 +33,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--suffix",
-        default="",
+        default=None,
         help=(
-            "Suffix for side-by-side output, for example '_highlighted'. "
-            "Default is empty, so files are edited in place unless --output-dir is used."
+            "Suffix for side-by-side output. Default is no suffix unless --copy is used."
         ),
+    )
+    parser.add_argument(
+        "--copy",
+        action="store_true",
+        help="Keep the source file and write a side-by-side finalized copy instead.",
     )
     parser.add_argument(
         "--dry-run",
@@ -44,6 +49,24 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Report target files without writing changes or running checks.",
     )
     return parser.parse_args(argv)
+
+
+def finalized_name_for(source: Path) -> str:
+    if source.stem.endswith("_al"):
+        return f"{source.stem[:-3]}_final{source.suffix}"
+    if source.stem.endswith("_final"):
+        return source.name
+    return f"{source.stem}_final{source.suffix}"
+
+
+def destination_for(source: Path, args: argparse.Namespace) -> Path:
+    if args.output_dir is not None:
+        return args.output_dir / finalized_name_for(source)
+    if args.copy:
+        if args.suffix is not None:
+            return output_path_for(source, None, args.suffix)
+        return source.with_name(finalized_name_for(source))
+    return source.with_name(finalized_name_for(source))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,26 +80,32 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[error] not found: {source}", file=sys.stderr)
+            print(f"[not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skip] not a .docx file: {source}", file=sys.stderr)
+            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
             continue
 
-        destination = output_path_for(source, args.output_dir, args.suffix)
+        destination = destination_for(source, args)
         if args.dry_run:
             print(f"[target] {source} -> {destination}")
             continue
 
         changed, skipped = highlight_docx(source, destination)
+        if not changed and destination != source:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if args.copy or args.output_dir is not None:
+                shutil.copy2(source, destination)
+            else:
+                source.replace(destination)
         if changed:
-            print(f"[updated] {destination} ({changed} paragraph(s))")
+            print(f"[highlighted] {destination} ({changed} paragraph(s))")
         else:
-            print(f"[unchanged] {destination}")
+            print(f"[no-highlights] {destination}")
         if skipped:
             print(
-                f"[warn] skipped {skipped} hyperlink paragraph(s) in {source}",
+                f"[skipped-hyperlinks] {source} ({skipped} paragraph(s))",
                 file=sys.stderr,
             )
 
@@ -85,9 +114,20 @@ def main(argv: list[str] | None = None) -> int:
         if missing:
             exit_code = 1
             joined = ", ".join(repr(item) for item in missing)
-            print(f"[missing] {check_path}: {joined}")
+            print(f"[check-failed] {check_path}: {joined}")
         else:
-            print(f"[ok] {check_path}")
+            print(f"[check-passed] {check_path}")
+
+        if (
+            changed
+            and not args.copy
+            and args.output_dir is None
+            and destination != source
+            and destination.exists()
+            and source.exists()
+        ):
+            source.unlink()
+            print(f"[renamed] {source} -> {destination}")
 
     return exit_code
 

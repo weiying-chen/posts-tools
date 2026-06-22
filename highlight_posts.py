@@ -31,11 +31,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--suffix",
-        default="",
+        default=None,
         help=(
-            "Suffix for side-by-side output, for example '_highlighted'. "
-            "Default is empty, so files are edited in place unless --output-dir is used."
+            "Suffix for side-by-side output. "
+            "Default is '_highlighted' unless --in-place is used."
         ),
+    )
+    parser.add_argument(
+        "--in-place",
+        action="store_true",
+        help="Edit files in place instead of writing side-by-side output.",
     )
     parser.add_argument(
         "--dry-run",
@@ -48,6 +53,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     targets = resolve_targets(args.paths)
+    suffix = "" if args.in_place else (args.suffix or "_highlighted")
 
     if not targets:
         print("[warn] no DOCX files found in the current directory", file=sys.stderr)
@@ -56,26 +62,26 @@ def main(argv: list[str] | None = None) -> int:
     exit_code = 0
     for source in targets:
         if not source.exists():
-            print(f"[error] not found: {source}", file=sys.stderr)
+            print(f"[not-found] {source}", file=sys.stderr)
             exit_code = 1
             continue
         if source.suffix.lower() != ".docx":
-            print(f"[skip] not a .docx file: {source}", file=sys.stderr)
+            print(f"[skipped] not a .docx file: {source}", file=sys.stderr)
             continue
 
-        destination = output_path_for(source, args.output_dir, args.suffix)
+        destination = output_path_for(source, args.output_dir, suffix)
         if args.dry_run:
             print(f"[target] {source} -> {destination}")
             continue
 
         changed, skipped = highlight_docx(source, destination)
         if changed:
-            print(f"[updated] {destination} ({changed} paragraph(s))")
+            print(f"[highlighted] {destination} ({changed} paragraph(s))")
         else:
-            print(f"[unchanged] {source}")
+            print(f"[no-highlights] {destination}")
         if skipped:
             print(
-                f"[warn] skipped {skipped} hyperlink paragraph(s) in {source}",
+                f"[skipped-hyperlinks] {source} ({skipped} paragraph(s))",
                 file=sys.stderr,
             )
 

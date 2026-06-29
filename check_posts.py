@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import re
 import sys
 from pathlib import Path
 
@@ -21,21 +22,34 @@ from posts_common import resolve_targets
 @dataclass(frozen=True)
 class RequiredPhraseGroup:
     display: str
-    variants: tuple[str, ...]
+    literals: tuple[str, ...] = ()
+    patterns: tuple[re.Pattern[str], ...] = ()
 
 
 def phrase_variants(base: str, punctuation: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(f"{base}{mark}" for mark in punctuation)
 
 
+def phrase_patterns(patterns: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
+    return tuple(re.compile(pattern) for pattern in patterns)
+
+
 REQUIRED_PHRASE_GROUPS = (
     RequiredPhraseGroup(
-        display="Let's take a listen! or Let's take a listen.",
-        variants=phrase_variants("Let's take a listen", ("!", ".")),
+        display=(
+            "Let's take a listen! / Let's take a listen. / "
+            "Let's hear what <subject> has to say."
+        ),
+        literals=phrase_variants("Let's take a listen", ("!", ".")),
+        patterns=phrase_patterns(
+            (
+                r"Let's hear what [A-Za-z][A-Za-z\s'-]* has to say[!.]",
+            )
+        ),
     ),
     RequiredPhraseGroup(
         display="一起來聽聽！或一起來聽聽。",
-        variants=phrase_variants("一起來聽聽", ("！", "。")),
+        literals=phrase_variants("一起來聽聽", ("！", "。")),
     ),
 )
 
@@ -61,12 +75,14 @@ def read_docx_text(path: Path) -> str:
 
 def find_missing_phrases(path: Path) -> list[str]:
     text = read_docx_text(path)
-    if any(variant in text for group in REQUIRED_PHRASE_GROUPS for variant in group.variants):
-        return []
-
-    return [
-        "Let's take a listen! or Let's take a listen. / 一起來聽聽！或一起來聽聽。"
-    ]
+    missing: list[str] = []
+    for group in REQUIRED_PHRASE_GROUPS:
+        if any(literal in text for literal in group.literals):
+            continue
+        if any(pattern.search(text) for pattern in group.patterns):
+            continue
+        missing.append(group.display)
+    return missing
 
 
 def main(argv: list[str] | None = None) -> int:

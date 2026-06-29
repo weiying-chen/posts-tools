@@ -11,6 +11,7 @@ try:
     from docx import Document
     from docx.enum.text import WD_COLOR_INDEX
     from docx.oxml.ns import qn
+    from docx.text.run import Run
 except ImportError as exc:  # pragma: no cover - depends on local environment
     raise SystemExit(
         "python-docx is required. Try running: "
@@ -101,11 +102,24 @@ def copy_run_properties(source_run, target_run) -> None:
     target_run._r.insert(0, copy.deepcopy(source_rpr))
 
 
-def highlight_marked_paragraph(paragraph) -> bool:
-    if paragraph_has_hyperlink(paragraph):
-        return False
+def replace_run_block(paragraph, runs, segments: list[Segment]) -> None:
+    first_run_element = runs[0]._element
+    insert_at = list(paragraph._p).index(first_run_element)
+    for run in runs:
+        paragraph._p.remove(run._element)
+    for segment in segments:
+        source_run = runs[min(segment.source_run_idx, len(runs) - 1)]
+        new_run = paragraph.add_run(segment.text)
+        copy_run_properties(source_run, new_run)
+        if segment.highlight:
+            new_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+        new_element = new_run._element
+        paragraph._p.remove(new_element)
+        paragraph._p.insert(insert_at, new_element)
+        insert_at += 1
 
-    runs = list(paragraph.runs)
+
+def highlight_run_block(paragraph, runs) -> bool:
     if not runs:
         return False
 
@@ -123,14 +137,31 @@ def highlight_marked_paragraph(paragraph) -> bool:
     if not segments:
         return False
 
-    clear_direct_runs(paragraph)
-    for segment in segments:
-        source_run = runs[min(segment.source_run_idx, len(runs) - 1)]
-        new_run = paragraph.add_run(segment.text)
-        copy_run_properties(source_run, new_run)
-        if segment.highlight:
-            new_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+    replace_run_block(paragraph, runs, segments)
     return True
+
+
+def direct_run_blocks(paragraph) -> list[list[Run]]:
+    blocks: list[list[Run]] = []
+    current: list[Run] = []
+    for child in paragraph._p:
+        if child.tag == qn("w:r"):
+            current.append(Run(child, paragraph))
+            continue
+        if current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def highlight_marked_paragraph(paragraph) -> bool:
+    changed = False
+    for runs in reversed(direct_run_blocks(paragraph)):
+        if highlight_run_block(paragraph, runs):
+            changed = True
+    return changed
 
 
 def validate_docx_xml(path: Path) -> None:
@@ -167,11 +198,10 @@ def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
     for paragraph in doc.paragraphs:
         if "*" not in paragraph.text:
             continue
-        if paragraph_has_hyperlink(paragraph):
-            skipped_hyperlink_paragraphs += 1
-            continue
         if highlight_marked_paragraph(paragraph):
             changed_paragraphs += 1
+        elif paragraph_has_hyperlink(paragraph):
+            skipped_hyperlink_paragraphs += 1
 
     if changed_paragraphs:
         destination.parent.mkdir(parents=True, exist_ok=True)

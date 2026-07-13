@@ -6,7 +6,7 @@ Post-generation tooling.
 
 - `gen_posts.sh`: generate `_al.docx` post files from a schedule `.docx`.
 - `highlight_posts`: turn paired `*text*` markers in generated post DOCX files into bright-green highlights.
-- `check_posts`: verify each post contains an English listening prompt (`Let's take a listen!`, `Let's take a listen.`, or `Let's hear what <subject> has to say.`) and a Chinese listening prompt (`一起來聽聽！` or `一起來聽聽。`).
+- `check_posts`: verify each post contains an English listening prompt (`Let's take a listen!`, `Let's take a listen.`, or `Let's hear what <subject> has to say.`) and a Chinese listening prompt (`一起來聽聽！`, `一起來聽聽。`, or `一起來聽聽<主題>怎麼說。`).
 - `finalize_posts`: run highlighting first, then run the phrase checker.
 
 ## Usage

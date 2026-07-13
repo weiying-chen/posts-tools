@@ -48,8 +48,13 @@ REQUIRED_PHRASE_GROUPS = (
         ),
     ),
     RequiredPhraseGroup(
-        display="一起來聽聽！或一起來聽聽。",
+        display="一起來聽聽！/ 一起來聽聽。/ 一起來聽聽<主題>怎麼說。",
         literals=phrase_variants("一起來聽聽", ("！", "。")),
+        patterns=phrase_patterns(
+            (
+                r"一起來聽聽[^！。，\n\r]+怎麼說[！。]",
+            )
+        ),
     ),
 )
 

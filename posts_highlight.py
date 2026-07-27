@@ -83,6 +83,47 @@ def split_star_segments(
     return [segment for segment in segments if segment.text]
 
 
+def split_star_segments_stateful(
+    text: str,
+    run_starts: list[int],
+    run_lengths: list[int],
+    highlight: bool,
+) -> tuple[list[Segment], bool]:
+    segments: list[Segment] = []
+    segment_start = 0
+
+    for idx, char in enumerate(text):
+        if char != "*":
+            continue
+
+        if idx > segment_start:
+            segments.append(
+                Segment(
+                    text=text[segment_start:idx],
+                    highlight=highlight,
+                    source_run_idx=run_index_for_offset(
+                        run_starts, run_lengths, segment_start
+                    ),
+                )
+            )
+
+        highlight = not highlight
+        segment_start = idx + 1
+
+    if segment_start < len(text):
+        segments.append(
+            Segment(
+                text=text[segment_start:],
+                highlight=highlight,
+                source_run_idx=run_index_for_offset(
+                    run_starts, run_lengths, segment_start
+                ),
+            )
+        )
+
+    return [segment for segment in segments if segment.text], highlight
+
+
 def paragraph_has_hyperlink(paragraph) -> bool:
     return paragraph._p.find(qn("w:hyperlink")) is not None
 
@@ -164,6 +205,41 @@ def highlight_marked_paragraph(paragraph) -> bool:
     return changed
 
 
+def highlight_paragraphs(paragraphs) -> int:
+    if sum(paragraph.text.count("*") for paragraph in paragraphs) % 2:
+        return sum(highlight_marked_paragraph(paragraph) for paragraph in paragraphs)
+
+    changed_paragraphs = 0
+    highlight = False
+
+    for paragraph in paragraphs:
+        paragraph_changed = False
+        for runs in direct_run_blocks(paragraph):
+            run_texts = [run.text for run in runs]
+            text = "".join(run_texts)
+            if not highlight and "*" not in text:
+                continue
+
+            run_starts: list[int] = []
+            run_lengths: list[int] = []
+            offset = 0
+            for run_text in run_texts:
+                run_starts.append(offset)
+                run_lengths.append(len(run_text))
+                offset += len(run_text)
+
+            segments, highlight = split_star_segments_stateful(
+                text, run_starts, run_lengths, highlight
+            )
+            replace_run_block(paragraph, runs, segments)
+            paragraph_changed = True
+
+        if paragraph_changed:
+            changed_paragraphs += 1
+
+    return changed_paragraphs
+
+
 def validate_docx_xml(path: Path) -> None:
     with zipfile.ZipFile(path) as zf:
         ET.fromstring(zf.read("word/document.xml"))
@@ -192,16 +268,13 @@ def write_highlighted_package(
 
 def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
     doc = Document(str(source))
-    changed_paragraphs = 0
     skipped_hyperlink_paragraphs = 0
 
     for paragraph in doc.paragraphs:
-        if "*" not in paragraph.text:
-            continue
-        if highlight_marked_paragraph(paragraph):
-            changed_paragraphs += 1
-        elif paragraph_has_hyperlink(paragraph):
+        if "*" in paragraph.text and paragraph_has_hyperlink(paragraph):
             skipped_hyperlink_paragraphs += 1
+
+    changed_paragraphs = highlight_paragraphs(doc.paragraphs)
 
     if changed_paragraphs:
         destination.parent.mkdir(parents=True, exist_ok=True)

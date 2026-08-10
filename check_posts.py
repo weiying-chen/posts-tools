@@ -16,7 +16,7 @@ except ImportError as exc:  # pragma: no cover - depends on local environment
         "/home/weiying/python/word/.venv/bin/python check_posts.py"
     ) from exc
 
-from posts_common import resolve_targets
+from posts_common import is_reference_heading, resolve_targets
 
 
 @dataclass(frozen=True)
@@ -84,7 +84,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def read_docx_text(path: Path) -> str:
     doc = Document(str(path))
-    return "\n".join(paragraph.text for paragraph in doc.paragraphs)
+    post_paragraphs: list[str] = []
+    for paragraph in doc.paragraphs:
+        text = paragraph.text
+        # Everything from this heading onward is source/reference material, not
+        # published post copy.  In particular, its call to action must not make
+        # an unfinished post pass validation.
+        if is_reference_heading(text):
+            break
+        post_paragraphs.append(text)
+    return "\n".join(post_paragraphs)
 
 
 def find_missing_phrases(path: Path) -> list[str]:

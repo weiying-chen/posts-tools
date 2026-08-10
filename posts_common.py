@@ -1,6 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
+
+
+REFERENCE_HEADING_RE = re.compile(r"\s*參考資料\s*[：:]?\s*")
+
+
+def is_reference_heading(text: str) -> bool:
+    return REFERENCE_HEADING_RE.fullmatch(text) is not None
 
 
 def is_current_directory_docx(path: Path) -> bool:

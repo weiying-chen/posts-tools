@@ -18,6 +18,8 @@ except ImportError as exc:  # pragma: no cover - depends on local environment
         "/home/weiying/python/word/.venv/bin/python highlight_posts.py"
     ) from exc
 
+from posts_common import is_reference_heading
+
 
 @dataclass(frozen=True)
 class Segment:
@@ -240,6 +242,36 @@ def highlight_paragraphs(paragraphs) -> int:
     return changed_paragraphs
 
 
+def highlight_reference_material(paragraphs) -> int:
+    """Make reference text cyan, while preserving intentional green spans."""
+    in_reference_material = False
+    changed_paragraphs = 0
+
+    for paragraph in paragraphs:
+        if not in_reference_material:
+            if is_reference_heading(paragraph.text):
+                in_reference_material = True
+            continue
+
+        paragraph_changed = False
+        # Descendant runs include runs nested inside hyperlinks, which are not
+        # exposed by python-docx's paragraph.runs collection.
+        for run_element in paragraph._p.iter(qn("w:r")):
+            run = Run(run_element, paragraph)
+            if (
+                run.text
+                and run.font.highlight_color
+                not in (WD_COLOR_INDEX.TURQUOISE, WD_COLOR_INDEX.BRIGHT_GREEN)
+            ):
+                run.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
+                paragraph_changed = True
+
+        if paragraph_changed:
+            changed_paragraphs += 1
+
+    return changed_paragraphs
+
+
 def validate_docx_xml(path: Path) -> None:
     with zipfile.ZipFile(path) as zf:
         ET.fromstring(zf.read("word/document.xml"))
@@ -275,6 +307,7 @@ def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
             skipped_hyperlink_paragraphs += 1
 
     changed_paragraphs = highlight_paragraphs(doc.paragraphs)
+    changed_paragraphs += highlight_reference_material(doc.paragraphs)
 
     if changed_paragraphs:
         destination.parent.mkdir(parents=True, exist_ok=True)

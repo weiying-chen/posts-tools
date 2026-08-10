@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import zipfile
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -256,13 +257,40 @@ def highlight_reference_material(paragraphs) -> int:
         paragraph_changed = False
         # Descendant runs include runs nested inside hyperlinks, which are not
         # exposed by python-docx's paragraph.runs collection.
-        for run_element in paragraph._p.iter(qn("w:r")):
+        for run_element in list(paragraph._p.iter(qn("w:r"))):
             run = Run(run_element, paragraph)
-            if (
-                run.text
-                and run.font.highlight_color
-                not in (WD_COLOR_INDEX.TURQUOISE, WD_COLOR_INDEX.BRIGHT_GREEN)
-            ):
+            text = run.text
+            color = run.font.highlight_color
+            if not text or color == WD_COLOR_INDEX.BRIGHT_GREEN:
+                continue
+
+            if not text.strip():
+                if color is not None:
+                    run.font.highlight_color = None
+                    paragraph_changed = True
+                continue
+
+            if "\n" in text or "\r" in text:
+                pieces = [piece for piece in re.split(r"([\r\n]+)", text) if piece]
+                insert_at = list(run_element.getparent()).index(run_element)
+                parent = run_element.getparent()
+                parent.remove(run_element)
+                for piece in pieces:
+                    new_run = paragraph.add_run(piece)
+                    copy_run_properties(run, new_run)
+                    new_run.font.highlight_color = (
+                        None
+                        if not piece.strip()
+                        else WD_COLOR_INDEX.TURQUOISE
+                    )
+                    new_element = new_run._element
+                    new_element.getparent().remove(new_element)
+                    parent.insert(insert_at, new_element)
+                    insert_at += 1
+                paragraph_changed = True
+                continue
+
+            if color != WD_COLOR_INDEX.TURQUOISE:
                 run.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
                 paragraph_changed = True
 

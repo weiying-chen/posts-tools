@@ -66,6 +66,36 @@ class ReferenceHighlightTests(unittest.TestCase):
                 ],
             )
 
+    def test_reference_line_breaks_are_not_highlighted(self) -> None:
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / "source.docx"
+            destination = Path(directory) / "destination.docx"
+            document = Document()
+            document.add_paragraph("參考資料：")
+            paragraph = document.add_paragraph()
+            blank = paragraph.add_run("\n")
+            blank.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
+            paragraph.add_run("\nvisible text\n\nmore text")
+            document.save(source)
+
+            highlight_docx(source, destination)
+
+            runs = Document(destination).paragraphs[1].runs
+            self.assertEqual(
+                [run.text for run in runs],
+                ["\n", "\n", "visible text", "\n\n", "more text"],
+            )
+            self.assertEqual(
+                [run.font.highlight_color for run in runs],
+                [
+                    None,
+                    None,
+                    WD_COLOR_INDEX.TURQUOISE,
+                    None,
+                    WD_COLOR_INDEX.TURQUOISE,
+                ],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

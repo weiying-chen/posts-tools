@@ -29,6 +29,18 @@ class Segment:
     source_run_idx: int
 
 
+@dataclass(frozen=True)
+class HighlightResult:
+    green_paragraphs: int
+    cyan_paragraphs: int
+    total_paragraphs: int
+    skipped_hyperlink_paragraphs: int
+
+    @property
+    def changed(self) -> bool:
+        return self.total_paragraphs > 0
+
+
 def run_index_for_offset(run_starts: list[int], run_lengths: list[int], offset: int) -> int:
     if not run_starts:
         return 0
@@ -208,14 +220,18 @@ def highlight_marked_paragraph(paragraph) -> bool:
     return changed
 
 
-def highlight_paragraphs(paragraphs) -> int:
+def highlight_paragraphs(paragraphs) -> set[int]:
     if sum(paragraph.text.count("*") for paragraph in paragraphs) % 2:
-        return sum(highlight_marked_paragraph(paragraph) for paragraph in paragraphs)
+        return {
+            index
+            for index, paragraph in enumerate(paragraphs)
+            if highlight_marked_paragraph(paragraph)
+        }
 
-    changed_paragraphs = 0
+    changed_paragraphs: set[int] = set()
     highlight = False
 
-    for paragraph in paragraphs:
+    for index, paragraph in enumerate(paragraphs):
         paragraph_changed = False
         for runs in direct_run_blocks(paragraph):
             run_texts = [run.text for run in runs]
@@ -238,17 +254,17 @@ def highlight_paragraphs(paragraphs) -> int:
             paragraph_changed = True
 
         if paragraph_changed:
-            changed_paragraphs += 1
+            changed_paragraphs.add(index)
 
     return changed_paragraphs
 
 
-def highlight_reference_material(paragraphs) -> int:
+def highlight_reference_material(paragraphs) -> set[int]:
     """Make reference text cyan, while preserving intentional green spans."""
     in_reference_material = False
-    changed_paragraphs = 0
+    changed_paragraphs: set[int] = set()
 
-    for paragraph in paragraphs:
+    for index, paragraph in enumerate(paragraphs):
         if not in_reference_material:
             if is_reference_heading(paragraph.text):
                 in_reference_material = True
@@ -295,7 +311,7 @@ def highlight_reference_material(paragraphs) -> int:
                 paragraph_changed = True
 
         if paragraph_changed:
-            changed_paragraphs += 1
+            changed_paragraphs.add(index)
 
     return changed_paragraphs
 
@@ -326,7 +342,7 @@ def write_highlighted_package(
     final_temp_path.replace(output_path)
 
 
-def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
+def highlight_docx(source: Path, destination: Path) -> HighlightResult:
     doc = Document(str(source))
     skipped_hyperlink_paragraphs = 0
 
@@ -334,8 +350,9 @@ def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
         if "*" in paragraph.text and paragraph_has_hyperlink(paragraph):
             skipped_hyperlink_paragraphs += 1
 
-    changed_paragraphs = highlight_paragraphs(doc.paragraphs)
-    changed_paragraphs += highlight_reference_material(doc.paragraphs)
+    green_paragraphs = highlight_paragraphs(doc.paragraphs)
+    cyan_paragraphs = highlight_reference_material(doc.paragraphs)
+    changed_paragraphs = green_paragraphs | cyan_paragraphs
 
     if changed_paragraphs:
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -352,4 +369,9 @@ def highlight_docx(source: Path, destination: Path) -> tuple[int, int]:
                 temp_output_path.unlink()
         validate_docx_xml(destination)
 
-    return changed_paragraphs, skipped_hyperlink_paragraphs
+    return HighlightResult(
+        green_paragraphs=len(green_paragraphs),
+        cyan_paragraphs=len(cyan_paragraphs),
+        total_paragraphs=len(changed_paragraphs),
+        skipped_hyperlink_paragraphs=skipped_hyperlink_paragraphs,
+    )

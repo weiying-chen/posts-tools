@@ -83,15 +83,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[target] {source} -> {destination}")
             continue
 
-        changed, _skipped = highlight_docx(source, destination)
-        if not changed and destination != source:
+        result = highlight_docx(source, destination)
+        if not result.changed and destination != source:
             destination.parent.mkdir(parents=True, exist_ok=True)
             if args.copy or args.output_dir is not None:
                 shutil.copy2(source, destination)
             else:
                 source.replace(destination)
-        if changed:
-            print(f"[highlighted] {destination} ({changed} paragraph(s))")
+        if result.changed:
+            print(
+                f"[highlighted] {destination} "
+                f"(green: {result.green_paragraphs}, "
+                f"cyan: {result.cyan_paragraphs}, "
+                f"total: {result.total_paragraphs})"
+            )
         else:
             print(f"[no-highlights] {destination}")
 

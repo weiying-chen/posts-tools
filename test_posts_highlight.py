@@ -24,10 +24,12 @@ class ReferenceHighlightTests(unittest.TestCase):
             green.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
             document.save(source)
 
-            changed, skipped = highlight_docx(source, destination)
+            result = highlight_docx(source, destination)
 
-            self.assertEqual(changed, 1)
-            self.assertEqual(skipped, 0)
+            self.assertEqual(result.green_paragraphs, 0)
+            self.assertEqual(result.cyan_paragraphs, 1)
+            self.assertEqual(result.total_paragraphs, 1)
+            self.assertEqual(result.skipped_hyperlink_paragraphs, 0)
             result = Document(destination)
             self.assertIsNone(result.paragraphs[0].runs[0].font.highlight_color)
             self.assertIsNone(result.paragraphs[1].runs[0].font.highlight_color)
@@ -53,9 +55,12 @@ class ReferenceHighlightTests(unittest.TestCase):
             document.add_paragraph("cyan *green* cyan")
             document.save(source)
 
-            highlight_docx(source, destination)
+            result = highlight_docx(source, destination)
 
             runs = Document(destination).paragraphs[1].runs
+            self.assertEqual(result.green_paragraphs, 1)
+            self.assertEqual(result.cyan_paragraphs, 1)
+            self.assertEqual(result.total_paragraphs, 1)
             self.assertEqual([run.text for run in runs], ["cyan ", "green", " cyan"])
             self.assertEqual(
                 [run.font.highlight_color for run in runs],

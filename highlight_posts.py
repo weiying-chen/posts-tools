@@ -74,9 +74,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[target] {source} -> {destination}")
             continue
 
-        changed, _skipped = highlight_docx(source, destination)
-        if changed:
-            print(f"[highlighted] {destination} ({changed} paragraph(s))")
+        result = highlight_docx(source, destination)
+        if result.changed:
+            print(
+                f"[highlighted] {destination} "
+                f"(green: {result.green_paragraphs}, "
+                f"cyan: {result.cyan_paragraphs}, "
+                f"total: {result.total_paragraphs})"
+            )
         else:
             print(f"[no-highlights] {destination}")
 

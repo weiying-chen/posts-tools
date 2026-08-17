@@ -76,6 +76,7 @@ class ReferenceHighlightTests(unittest.TestCase):
             blank = paragraph.add_run("\n")
             blank.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
             paragraph.add_run("\nvisible text\n\nmore text")
+            paragraph.add_run(" ")
             document.save(source)
 
             highlight_docx(source, destination)
@@ -83,7 +84,7 @@ class ReferenceHighlightTests(unittest.TestCase):
             runs = Document(destination).paragraphs[1].runs
             self.assertEqual(
                 [run.text for run in runs],
-                ["\n", "\n", "visible text", "\n\n", "more text"],
+                ["\n", "\n", "visible text", "\n\n", "more text", " "],
             )
             self.assertEqual(
                 [run.font.highlight_color for run in runs],
@@ -92,6 +93,7 @@ class ReferenceHighlightTests(unittest.TestCase):
                     None,
                     WD_COLOR_INDEX.TURQUOISE,
                     None,
+                    WD_COLOR_INDEX.TURQUOISE,
                     WD_COLOR_INDEX.TURQUOISE,
                 ],
             )

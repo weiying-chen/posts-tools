@@ -264,7 +264,7 @@ def highlight_reference_material(paragraphs) -> int:
             if not text or color == WD_COLOR_INDEX.BRIGHT_GREEN:
                 continue
 
-            if not text.strip():
+            if text and not text.replace("\r", "").replace("\n", ""):
                 if color is not None:
                     run.font.highlight_color = None
                     paragraph_changed = True
@@ -280,7 +280,7 @@ def highlight_reference_material(paragraphs) -> int:
                     copy_run_properties(run, new_run)
                     new_run.font.highlight_color = (
                         None
-                        if not piece.strip()
+                        if not piece.replace("\r", "").replace("\n", "")
                         else WD_COLOR_INDEX.TURQUOISE
                     )
                     new_element = new_run._element

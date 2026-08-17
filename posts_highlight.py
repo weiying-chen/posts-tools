@@ -271,6 +271,19 @@ def highlight_reference_material(paragraphs) -> set[int]:
             continue
 
         paragraph_changed = False
+        if not paragraph.text.strip():
+            for run_element in paragraph._p.iter(qn("w:r")):
+                run = Run(run_element, paragraph)
+                if (
+                    run.font.highlight_color is not None
+                    and run.font.highlight_color != WD_COLOR_INDEX.BRIGHT_GREEN
+                ):
+                    run.font.highlight_color = None
+                    paragraph_changed = True
+            if paragraph_changed:
+                changed_paragraphs.add(index)
+            continue
+
         # Descendant runs include runs nested inside hyperlinks, which are not
         # exposed by python-docx's paragraph.runs collection.
         for run_element in list(paragraph._p.iter(qn("w:r"))):

@@ -82,6 +82,8 @@ class ReferenceHighlightTests(unittest.TestCase):
             blank.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
             paragraph.add_run("\nvisible text\n\nmore text")
             paragraph.add_run(" ")
+            blank_paragraph = document.add_paragraph(" ")
+            blank_paragraph.runs[0].font.highlight_color = WD_COLOR_INDEX.TURQUOISE
             document.save(source)
 
             highlight_docx(source, destination)
@@ -101,6 +103,9 @@ class ReferenceHighlightTests(unittest.TestCase):
                     WD_COLOR_INDEX.TURQUOISE,
                     WD_COLOR_INDEX.TURQUOISE,
                 ],
+            )
+            self.assertIsNone(
+                Document(destination).paragraphs[2].runs[0].font.highlight_color
             )
 
 

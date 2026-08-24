@@ -46,6 +46,20 @@ class CheckPostsTests(unittest.TestCase):
 
             self.assertEqual(find_missing_phrases(path), [])
 
+    def test_take_a_look_phrases_pass(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = self.make_docx(
+                [
+                    "Let's take a look.",
+                    "一起來看看。",
+                    "參考資料：",
+                    "source material",
+                ],
+                directory,
+            )
+
+            self.assertEqual(find_missing_phrases(path), [])
+
 
 if __name__ == "__main__":
     unittest.main()

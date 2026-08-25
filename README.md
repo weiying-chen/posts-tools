@@ -5,6 +5,7 @@ Post-generation tooling.
 ## Scripts
 
 - `gen_posts.sh`: generate `_al.docx` post files from a schedule `.docx`.
+- `ref_posts.py`: rebuild the Markdown reference bundles under `~/text/posts/refs`.
 - `highlight_posts`: turn paired `*text*` markers in generated post DOCX files into bright-green highlights.
 - `check_posts`: verify each post contains an accepted English call to action (`Let's take a listen!`, `Let's take a look.`, `Let's hear what <subject> has to say.`, or `Let's get moving!`) and an accepted Chinese call to action (`一起來聽聽！`, `一起來看看。`, `一起來聽聽<主題>怎麼說。`, or `現在就跟著教練一起動起來！`).
 - `finalize_posts`: apply green highlighting to paired `*text*` markers, make
@@ -56,6 +57,16 @@ Run the full finalization flow:
 ```bash
 /home/weiying/python/posts-tools/finalize_posts
 ```
+
+Rebuild post references:
+
+```bash
+python3 /home/weiying/python/posts-tools/ref_posts.py
+```
+
+Use `--dry-run` to list stale outputs without writing, or `--check` to exit
+nonzero when generated references are stale. Pass `--root` to use a posts
+project somewhere other than `~/text/posts`.
 
 By default this finalizes in place and keeps the existing filename, including `*_al.docx`.
 Use `--copy` to keep the source file and write a separate finalized file instead.

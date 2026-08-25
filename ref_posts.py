@@ -18,6 +18,7 @@ from zipfile import ZipFile
 
 
 DEFAULT_ROOT = Path.home() / "text" / "posts"
+DEFAULT_LATEST_BATCH_COUNT = 4
 ROOT = DEFAULT_ROOT
 REFS = ROOT / "refs"
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -109,7 +110,9 @@ def append_document(lines: list[str], heading: str, path: Path) -> None:
     lines.extend(normalize_blank_lines(docx_lines(path)))
 
 
-def human_posts_pairs() -> list[tuple[Path, list[Pair]]]:
+def human_posts_pairs(
+    limit: int = DEFAULT_LATEST_BATCH_COUNT,
+) -> list[tuple[Path, list[Pair]]]:
     eligible: list[tuple[int, Path, list[Pair]]] = []
     for folder in ROOT.iterdir():
         match = re.fullmatch(r"posts-(\d+)", folder.name)
@@ -130,16 +133,18 @@ def human_posts_pairs() -> list[tuple[Path, list[Pair]]]:
         # prevents a partially edited new batch from displacing a complete one.
         if len(pairs) >= 2:
             eligible.append((int(match.group(1)), folder, pairs))
-    return [(folder, pairs) for _, folder, pairs in sorted(eligible)[-3:]]
+    if limit < 1:
+        raise ValueError("limit must be at least 1")
+    return [(folder, pairs) for _, folder, pairs in sorted(eligible)[-limit:]]
 
 
 def generate_latest_posts() -> str:
     batches = human_posts_pairs()
-    if len(batches) < 3:
-        raise RuntimeError("Fewer than three complete two-pair posts batches were found")
+    if not batches:
+        raise RuntimeError("No complete two-pair posts batches were found")
     names = [folder.name for folder, _ in batches]
     lines = [
-        "# Latest 3 Posts",
+        f"# Latest {len(batches)} Posts",
         "",
         f"Reference batches from {', '.join(f'`{name}`' for name in names)}. "
         "Each batch contains two 人間菩提小編文 sets: the complete revision "
@@ -237,7 +242,7 @@ def main() -> int:
     REFS.mkdir(parents=True, exist_ok=True)
 
     outputs = {
-        REFS / "latest-3-posts.md": generate_latest_posts(),
+        REFS / "latest-4-posts.md": generate_latest_posts(),
         REFS / "world-day-posts.md": generate_world_days(),
     }
     readonly = args.check or args.dry_run

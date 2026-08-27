@@ -4,7 +4,8 @@ Post-generation tooling.
 
 ## Scripts
 
-- `gen_posts.sh`: generate `_al.docx` post files from a schedule `.docx`.
+- `prepare_posts.sh`: prepare `_al.docx` post skeletons from a schedule `.docx`.
+- `gen_posts.sh`: generate a finished post DOCX from completed post text.
 - `ref_posts.py`: rebuild the Markdown reference bundles under `~/text/posts/refs`.
 - `highlight_posts`: turn paired `*text*` markers in generated post DOCX files into bright-green highlights.
 - `check_posts`: verify each post contains an accepted English call to action (`Let's take a listen!`, `Let's take a look.`, `Let's hear what <subject> has to say.`, or `Let's get moving!`) and an accepted Chinese call to action (`一起來聽聽！`, `一起來看看。`, `一起來聽聽<主題>怎麼說。`, or `現在就跟著教練一起動起來！`).
@@ -14,16 +15,22 @@ Post-generation tooling.
 
 ## Usage
 
-Generate posts from a schedule file:
+Prepare post skeletons from a schedule file:
 
 ```bash
-/home/weiying/python/posts-tools/gen_posts.sh /path/to/schedule.docx
+/home/weiying/python/posts-tools/prepare_posts.sh /path/to/schedule.docx
 ```
 
 If exactly one `.docx` exists in current directory, argument is optional:
 
 ```bash
-/home/weiying/python/posts-tools/gen_posts.sh
+/home/weiying/python/posts-tools/prepare_posts.sh
+```
+
+Generate a finished post from completed text:
+
+```bash
+/home/weiying/python/posts-tools/gen_posts.sh /path/to/post.txt
 ```
 
 Highlight generated posts in place:

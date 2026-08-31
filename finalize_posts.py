@@ -7,9 +7,38 @@ import shutil
 import sys
 from pathlib import Path
 
+from docx import Document
+
 from check_posts import find_missing_phrases
 from posts_common import output_path_for, resolve_targets
 from posts_highlight import highlight_docx
+
+
+SMART_QUOTE_CHARS = "‘’“”"
+SMART_QUOTE_TRANSLATION = str.maketrans(
+    {
+        "‘": "'",
+        "’": "'",
+        "“": '"',
+        "”": '"',
+    }
+)
+
+
+def normalize_smart_quotes(path: Path) -> int:
+    """Replace smart quotes in runs without discarding their formatting."""
+    doc = Document(str(path))
+    replacements = 0
+    for paragraph in doc.paragraphs:
+        for run in paragraph.runs:
+            normalized = run.text.translate(SMART_QUOTE_TRANSLATION)
+            if normalized == run.text:
+                continue
+            replacements += sum(run.text.count(char) for char in SMART_QUOTE_CHARS)
+            run.text = normalized
+    if replacements:
+        doc.save(str(path))
+    return replacements
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -101,6 +130,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[no-highlights] {destination}")
 
         check_path = destination if destination.exists() else source
+        normalized_quotes = normalize_smart_quotes(check_path)
+        if normalized_quotes:
+            print(
+                f"[normalized-quotes] {check_path} "
+                f"({normalized_quotes} replacements)"
+            )
         missing = find_missing_phrases(check_path)
         if missing:
             exit_code = 1

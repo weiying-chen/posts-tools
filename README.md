@@ -11,7 +11,8 @@ Post-generation tooling.
 - `check_posts`: verify each post contains an accepted English call to action (`Let's take a listen!`, `Let's take a look.`, `Let's hear what <subject> has to say.`, or `Let's get moving!`) and an accepted Chinese call to action (`一起來聽聽！`, `一起來看看。`, `一起來聽聽<主題>怎麼說。`, or `現在就跟著教練一起動起來！`).
 - `finalize_posts`: apply green highlighting to paired `*text*` markers, make
   reference material after `參考資料：` cyan while preserving green spans,
-  then check the post copy for the required phrases.
+  normalize smart quotes to straight quotes, then check the post copy for the
+  required phrases.
 
 ## Usage
 

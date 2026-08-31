@@ -88,12 +88,9 @@ def main(argv: list[str] | None = None) -> int:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
 
-        normalized_quotes = clean_docx(destination)
-        if normalized_quotes:
-            print(
-                f"[normalized-quotes] {destination} "
-                f"({normalized_quotes} replacements)"
-            )
+        cleanup_changes = clean_docx(destination)
+        if cleanup_changes:
+            print(f"[cleaned] {destination} ({cleanup_changes} changes)")
 
         result = highlight_docx(destination, destination)
         if result.changed:

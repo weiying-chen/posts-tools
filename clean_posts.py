@@ -24,19 +24,24 @@ SMART_QUOTE_TRANSLATION = str.maketrans(
 
 
 def clean_docx(path: Path) -> int:
-    """Normalize a post DOCX in place and return the replacement count."""
+    """Normalize a post DOCX in place and return the number of changes."""
     doc = Document(str(path))
-    replacements = 0
+    changes = 0
     for paragraph in doc.paragraphs:
         for run in paragraph.runs:
             normalized = run.text.translate(SMART_QUOTE_TRANSLATION)
             if normalized == run.text:
                 continue
-            replacements += sum(run.text.count(char) for char in SMART_QUOTE_CHARS)
+            changes += sum(run.text.count(char) for char in SMART_QUOTE_CHARS)
             run.text = normalized
-    if replacements:
+    for paragraph in reversed(doc.paragraphs):
+        if paragraph.text.strip() not in {"英文翻譯：", "英文翻譯:"}:
+            continue
+        paragraph._element.getparent().remove(paragraph._element)
+        changes += 1
+    if changes:
         doc.save(str(path))
-    return replacements
+    return changes
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -100,9 +105,9 @@ def main(argv: list[str] | None = None) -> int:
         if destination != source:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
-        replacements = clean_docx(destination)
-        if replacements:
-            print(f"[cleaned] {destination} ({replacements} replacements)")
+        changes = clean_docx(destination)
+        if changes:
+            print(f"[cleaned] {destination} ({changes} changes)")
         else:
             print(f"[already-clean] {destination}")
     return exit_code

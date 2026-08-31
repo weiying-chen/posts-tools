@@ -7,8 +7,8 @@ Post-generation tooling.
 - `prepare_posts.sh`: prepare `_al.docx` post skeletons from a schedule `.docx`.
 - `gen_posts.sh`: generate a finished post DOCX from completed post text.
 - `ref_posts.py`: rebuild the Markdown reference bundles under `~/text/posts/refs`.
-- `clean_posts`: normalize smart quotes in generated posts while preserving
-  Word formatting.
+- `clean_posts`: normalize smart quotes and remove obsolete source labels from
+  generated posts while preserving Word formatting.
 - `highlight_posts`: turn paired `*text*` markers in generated post DOCX files into bright-green highlights.
 - `check_posts`: verify each post contains an accepted English call to action (`Let's take a listen!`, `Let's take a look.`, `Let's hear what <subject> has to say.`, or `Let's get moving!`) and an accepted Chinese call to action (`一起來聽聽！`, `一起來看看。`, `一起來聽聽<主題>怎麼說。`, or `現在就跟著教練一起動起來！`).
 - `finalize_posts`: apply green highlighting to paired `*text*` markers, make

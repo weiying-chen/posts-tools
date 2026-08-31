@@ -7,38 +7,10 @@ import shutil
 import sys
 from pathlib import Path
 
-from docx import Document
-
 from check_posts import find_missing_phrases
+from clean_posts import clean_docx
 from posts_common import output_path_for, resolve_targets
 from posts_highlight import highlight_docx
-
-
-SMART_QUOTE_CHARS = "‘’“”"
-SMART_QUOTE_TRANSLATION = str.maketrans(
-    {
-        "‘": "'",
-        "’": "'",
-        "“": '"',
-        "”": '"',
-    }
-)
-
-
-def normalize_smart_quotes(path: Path) -> int:
-    """Replace smart quotes in runs without discarding their formatting."""
-    doc = Document(str(path))
-    replacements = 0
-    for paragraph in doc.paragraphs:
-        for run in paragraph.runs:
-            normalized = run.text.translate(SMART_QUOTE_TRANSLATION)
-            if normalized == run.text:
-                continue
-            replacements += sum(run.text.count(char) for char in SMART_QUOTE_CHARS)
-            run.text = normalized
-    if replacements:
-        doc.save(str(path))
-    return replacements
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -112,13 +84,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[target] {source} -> {destination}")
             continue
 
-        result = highlight_docx(source, destination)
-        if not result.changed and destination != source:
+        if destination != source:
             destination.parent.mkdir(parents=True, exist_ok=True)
-            if args.copy or args.output_dir is not None:
-                shutil.copy2(source, destination)
-            else:
-                source.replace(destination)
+            shutil.copy2(source, destination)
+
+        normalized_quotes = clean_docx(destination)
+        if normalized_quotes:
+            print(
+                f"[normalized-quotes] {destination} "
+                f"({normalized_quotes} replacements)"
+            )
+
+        result = highlight_docx(destination, destination)
         if result.changed:
             print(
                 f"[highlighted] {destination} "
@@ -129,20 +106,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"[no-highlights] {destination}")
 
-        check_path = destination if destination.exists() else source
-        normalized_quotes = normalize_smart_quotes(check_path)
-        if normalized_quotes:
-            print(
-                f"[normalized-quotes] {check_path} "
-                f"({normalized_quotes} replacements)"
-            )
-        missing = find_missing_phrases(check_path)
+        missing = find_missing_phrases(destination)
         if missing:
             exit_code = 1
             joined = ", ".join(repr(item) for item in missing)
-            print(f"[check-failed] {check_path}: {joined}")
+            print(f"[check-failed] {destination}: {joined}")
         else:
-            print(f"[check-passed] {check_path}")
+            print(f"[check-passed] {destination}")
 
     return exit_code
 

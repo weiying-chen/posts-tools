@@ -4,7 +4,8 @@ import unittest
 
 from docx import Document
 
-from finalize_posts import main, normalize_smart_quotes
+from clean_posts import clean_docx
+from finalize_posts import main
 
 
 class FinalizePostsTests(unittest.TestCase):
@@ -30,6 +31,21 @@ class FinalizePostsTests(unittest.TestCase):
             )
             self.assertTrue(result.paragraphs[0].runs[0].bold)
 
+    def test_copy_mode_cleans_copy_without_changing_source(self) -> None:
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / "post.docx"
+            document = Document()
+            document.add_paragraph("Let’s take a listen.")
+            document.add_paragraph("一起來聽聽。")
+            document.add_paragraph("參考資料：")
+            document.save(source)
+
+            self.assertEqual(main(["--copy", str(source)]), 0)
+
+            cleaned = source.with_name("post_finalized.docx")
+            self.assertIn("Let’s", Document(source).paragraphs[0].text)
+            self.assertIn("Let's", Document(cleaned).paragraphs[0].text)
+
     def test_normalizer_reports_replaced_characters(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "post.docx"
@@ -37,7 +53,7 @@ class FinalizePostsTests(unittest.TestCase):
             document.add_paragraph("‘one’ “two”")
             document.save(path)
 
-            self.assertEqual(normalize_smart_quotes(path), 4)
+            self.assertEqual(clean_docx(path), 4)
             self.assertEqual(Document(path).paragraphs[0].text, "'one' \"two\"")
 
 

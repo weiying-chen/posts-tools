@@ -38,7 +38,8 @@ REQUIRED_PHRASE_GROUPS = (
     RequiredPhraseGroup(
         display=(
             "Let's take a listen! / Let's take a listen. / "
-            "Let's take a look. / Let's hear what <subject> has to say. / "
+            "Let's take a look. / Let's see how <description>. / "
+            "Let's hear what <subject> has to say. / "
             "Let's get moving!"
         ),
         literals=(
@@ -49,12 +50,14 @@ REQUIRED_PHRASE_GROUPS = (
         patterns=phrase_patterns(
             (
                 r"Let's hear what [A-Za-z][A-Za-z\s'-]* has to say[!.]",
+                r"[Ll]et's see how [^.!?\n\r]+[!.]",
             )
         ),
     ),
     RequiredPhraseGroup(
         display=(
             "一起來聽聽！/ 一起來聽聽。/ 一起來看看。/ "
+            "一起來看看，<說明>。/ "
             "一起來聽聽<主題>怎麼說。/ "
             "現在就跟著教練一起動起來！"
         ),
@@ -66,6 +69,7 @@ REQUIRED_PHRASE_GROUPS = (
         patterns=phrase_patterns(
             (
                 r"一起來聽聽[^！。，\n\r]+怎麼說[！。]",
+                r"一起來看看[，,][^。！\n\r]+[。！]",
             )
         ),
     ),

@@ -18,7 +18,7 @@ from zipfile import ZipFile
 
 
 DEFAULT_ROOT = Path.home() / "text" / "posts"
-DEFAULT_LATEST_BATCH_COUNT = 4
+DEFAULT_LATEST_BATCH_COUNT = 6
 ROOT = DEFAULT_ROOT
 REFS = ROOT / "refs"
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -254,8 +254,9 @@ def main() -> int:
         raise SystemExit(f"Missing posts project root: {ROOT}")
     REFS.mkdir(parents=True, exist_ok=True)
 
+    selected_count = len(human_posts_pairs(args.latest))
     outputs = {
-        REFS / f"latest-{args.latest}-posts.md": generate_latest_posts(args.latest),
+        REFS / f"latest-{selected_count}-posts.md": generate_latest_posts(args.latest),
         REFS / "world-day-posts.md": generate_world_days(),
     }
     readonly = args.check or args.dry_run

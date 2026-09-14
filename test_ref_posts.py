@@ -6,9 +6,9 @@ import ref_posts
 
 
 class RefPostsTests(unittest.TestCase):
-    def test_latest_argument_defaults_to_four_and_accepts_override(self):
-        self.assertEqual(ref_posts.parse_args([]).latest, 4)
-        self.assertEqual(ref_posts.parse_args(["--latest", "6"]).latest, 6)
+    def test_latest_argument_defaults_to_six_and_accepts_override(self):
+        self.assertEqual(ref_posts.parse_args([]).latest, 6)
+        self.assertEqual(ref_posts.parse_args(["--latest", "4"]).latest, 4)
 
     def test_normalize_blank_lines_collapses_runs_and_edges(self):
         self.assertEqual(
@@ -19,7 +19,7 @@ class RefPostsTests(unittest.TestCase):
     def test_default_root_is_posts_folder(self):
         self.assertEqual(ref_posts.DEFAULT_ROOT, Path.home() / "text" / "posts")
 
-    def test_latest_posts_defaults_to_four_and_falls_back_to_existing(self):
+    def test_latest_posts_defaults_to_six_and_uses_all_existing(self):
         original_root = ref_posts.ROOT
         try:
             with TemporaryDirectory() as directory:
@@ -37,7 +37,7 @@ class RefPostsTests(unittest.TestCase):
 
                 batches = ref_posts.human_posts_pairs()
                 self.assertEqual([folder.name for folder, _ in batches], [
-                    "posts-2", "posts-3", "posts-4", "posts-5"
+                    "posts-1", "posts-2", "posts-3", "posts-4", "posts-5"
                 ])
 
                 for number in range(2, 6):

@@ -83,8 +83,9 @@ Rebuild post references:
 python3 /home/weiying/python/posts-tools/ref_posts.py
 ```
 
-Pass `--latest N` to select up to N complete batches and write
-`latest-N-posts.md`; the default is 4.
+Pass `--latest N` to select up to N complete batches; the default is 6. If
+fewer complete batches exist, all available batches are included and the
+filename uses the actual count.
 
 Use `--dry-run` to list stale outputs without writing, or `--check` to exit
 nonzero when generated references are stale. Pass `--root` to use a posts

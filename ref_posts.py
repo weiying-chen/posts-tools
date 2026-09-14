@@ -138,8 +138,8 @@ def human_posts_pairs(
     return [(folder, pairs) for _, folder, pairs in sorted(eligible)[-limit:]]
 
 
-def generate_latest_posts() -> str:
-    batches = human_posts_pairs()
+def generate_latest_posts(limit: int = DEFAULT_LATEST_BATCH_COUNT) -> str:
+    batches = human_posts_pairs(limit)
     if not batches:
         raise RuntimeError("No complete two-pair posts batches were found")
     names = [folder.name for folder, _ in batches]
@@ -222,8 +222,7 @@ def update(path: Path, content: str, check: bool) -> bool:
     return changed
 
 
-def main() -> int:
-    global ROOT, REFS
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
@@ -231,9 +230,23 @@ def main() -> int:
         default=DEFAULT_ROOT,
         help=f"posts project root (default: {DEFAULT_ROOT})",
     )
+    parser.add_argument(
+        "--latest",
+        type=int,
+        default=DEFAULT_LATEST_BATCH_COUNT,
+        help=f"maximum number of latest batches to include (default: {DEFAULT_LATEST_BATCH_COUNT})",
+    )
     parser.add_argument("--check", action="store_true", help="report stale outputs without rewriting them")
     parser.add_argument("--dry-run", action="store_true", help="show files that would change without rewriting them")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.latest < 1:
+        parser.error("--latest must be at least 1")
+    return args
+
+
+def main() -> int:
+    global ROOT, REFS
+    args = parse_args()
 
     ROOT = args.root.expanduser().resolve()
     REFS = ROOT / "refs"
@@ -242,7 +255,7 @@ def main() -> int:
     REFS.mkdir(parents=True, exist_ok=True)
 
     outputs = {
-        REFS / "latest-4-posts.md": generate_latest_posts(),
+        REFS / f"latest-{args.latest}-posts.md": generate_latest_posts(args.latest),
         REFS / "world-day-posts.md": generate_world_days(),
     }
     readonly = args.check or args.dry_run

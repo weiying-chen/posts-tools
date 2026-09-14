@@ -6,6 +6,10 @@ import ref_posts
 
 
 class RefPostsTests(unittest.TestCase):
+    def test_latest_argument_defaults_to_four_and_accepts_override(self):
+        self.assertEqual(ref_posts.parse_args([]).latest, 4)
+        self.assertEqual(ref_posts.parse_args(["--latest", "6"]).latest, 6)
+
     def test_normalize_blank_lines_collapses_runs_and_edges(self):
         self.assertEqual(
             ref_posts.normalize_blank_lines(["", "A", "", "", "B", "", ""]),

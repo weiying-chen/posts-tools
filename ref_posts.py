@@ -25,6 +25,11 @@ W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 W = f"{{{W_NS}}}"
 WORLD_DAY_RE = re.compile(r"\bWorld[^\n]{0,80}?Day\b", re.IGNORECASE)
 ZH_WORLD_DAY_RE = re.compile(r"世界[^\n]{0,30}?日")
+INTERNATIONAL_DAY_RE = re.compile(
+    r"\bInternational Day of Awareness of Food Loss and Waste\b",
+    re.IGNORECASE,
+)
+ZH_INTERNATIONAL_DAY_RE = re.compile(r"國際[^\n]{0,40}?日")
 
 
 @dataclass(frozen=True)
@@ -166,7 +171,12 @@ def accepted_text(path: Path) -> str:
 
 def is_world_day(path: Path) -> bool:
     text = accepted_text(path)
-    return bool(WORLD_DAY_RE.search(text) or ZH_WORLD_DAY_RE.search(text))
+    return bool(
+        WORLD_DAY_RE.search(text)
+        or ZH_WORLD_DAY_RE.search(text)
+        or INTERNATIONAL_DAY_RE.search(text)
+        or ZH_INTERNATIONAL_DAY_RE.search(text)
+    )
 
 
 def world_day_pairs() -> list[Pair]:
@@ -189,8 +199,8 @@ def world_day_pairs() -> list[Pair]:
 
 def observance(path: Path) -> str:
     text = accepted_text(path)
-    en = WORLD_DAY_RE.search(text)
-    zh = ZH_WORLD_DAY_RE.search(text)
+    en = WORLD_DAY_RE.search(text) or INTERNATIONAL_DAY_RE.search(text)
+    zh = ZH_WORLD_DAY_RE.search(text) or ZH_INTERNATIONAL_DAY_RE.search(text)
     labels = []
     if en:
         labels.append(en.group(0).strip())
@@ -202,10 +212,11 @@ def observance(path: Path) -> str:
 def generate_world_days() -> str:
     pairs = world_day_pairs()
     lines = [
-        "# World Day Post References",
+        "# Observance Post References",
         "",
         "Complete matched pre-edit and post-edit reference posts connected to "
-        "a World Day observance. No revision/original-script files are included.",
+        "a World or International Day observance. No revision/original-script "
+        "files are included.",
     ]
     for pair in pairs:
         lines.extend(["", "---", "", f"# {observance(pair.pre)}"])

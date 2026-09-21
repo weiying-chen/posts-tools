@@ -19,6 +19,12 @@ class RefPostsTests(unittest.TestCase):
     def test_default_root_is_posts_folder(self):
         self.assertEqual(ref_posts.DEFAULT_ROOT, Path.home() / "text" / "posts")
 
+    def test_international_day_observances_are_recognized(self):
+        english = "International Day of Awareness of Food Loss and Waste"
+        chinese = "國際糧食損失與浪費問題宣傳日"
+        self.assertIsNotNone(ref_posts.INTERNATIONAL_DAY_RE.search(english))
+        self.assertIsNotNone(ref_posts.ZH_INTERNATIONAL_DAY_RE.search(chinese))
+
     def test_latest_posts_defaults_to_six_and_uses_all_existing(self):
         original_root = ref_posts.ROOT
         try:

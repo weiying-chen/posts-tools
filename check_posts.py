@@ -57,7 +57,7 @@ REQUIRED_PHRASE_GROUPS = (
     RequiredPhraseGroup(
         display=(
             "一起來聽聽！/ 一起來聽聽。/ 一起來看看。/ "
-            "一起來看看，<說明>。/ "
+            "一起來看看[，]<說明>。/ "
             "一起來聽聽<主題>怎麼說。/ "
             "現在就跟著教練一起動起來！"
         ),
@@ -69,7 +69,7 @@ REQUIRED_PHRASE_GROUPS = (
         patterns=phrase_patterns(
             (
                 r"一起來聽聽[^！。，\n\r]+怎麼說[！。]",
-                r"一起來看看[，,][^。！\n\r]+[。！]",
+                r"一起來看看[，,]?[^。！\n\r]+[。！]",
             )
         ),
     ),

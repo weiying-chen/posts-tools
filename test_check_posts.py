@@ -78,6 +78,19 @@ class CheckPostsTests(unittest.TestCase):
 
             self.assertEqual(find_missing_phrases(path), [])
 
+    def test_descriptive_chinese_look_phrase_without_comma_passes(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = self.make_docx(
+                [
+                    "Let's see how science is helping apple trees survive drought.",
+                    "一起來看看科學如何幫助蘋果樹提升抗旱能力。",
+                    "參考資料：",
+                ],
+                directory,
+            )
+
+            self.assertEqual(find_missing_phrases(path), [])
+
     def test_unfinished_descriptive_look_phrases_still_fail(self) -> None:
         with TemporaryDirectory() as directory:
             path = self.make_docx(

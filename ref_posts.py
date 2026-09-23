@@ -131,7 +131,9 @@ def human_posts_pairs(
                 continue
             mmdd = date_match.group(1)
             pre_candidates = sorted((folder / "output").glob(f"26{mmdd}_人間菩提小編文_al.docx"))
-            post_candidates = sorted((folder / "edited").glob(f"26{mmdd}_人間菩提小編文_al_ev.docx"))
+            post_candidates = sorted(
+                (folder / "edited").glob(f"26{mmdd}_人間菩提小編文_al*_ev.docx")
+            )
             if len(pre_candidates) == 1 and len(post_candidates) == 1:
                 pairs.append(Pair(f"115{mmdd}", pre_candidates[0], post_candidates[0], revision))
         # A standard batch contains exactly two 人間菩提 posts. Requiring two
@@ -183,8 +185,9 @@ def world_day_pairs() -> list[Pair]:
     found: dict[tuple[Path, Path], Pair] = {}
 
     # Current convention: output/foo_al.docx -> edited/foo_al_ev.docx.
-    for post in ROOT.glob("**/edited/*_al_ev.docx"):
-        pre = post.parent.parent / "output" / post.name.replace("_al_ev.docx", "_al.docx")
+    for post in ROOT.glob("**/edited/*_al*_ev.docx"):
+        pre_name = re.sub(r"_al(?: \d+)?_ev\.docx$", "_al.docx", post.name)
+        pre = post.parent.parent / "output" / pre_name
         if pre.is_file() and (is_world_day(pre) or is_world_day(post)):
             found[(pre, post)] = Pair(pre.stem.removesuffix("_al"), pre, post)
 

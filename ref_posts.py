@@ -18,7 +18,7 @@ from zipfile import ZipFile
 
 
 DEFAULT_ROOT = Path.home() / "text" / "posts"
-DEFAULT_LATEST_BATCH_COUNT = 6
+DEFAULT_LATEST_BATCH_COUNT = 8
 ROOT = DEFAULT_ROOT
 REFS = ROOT / "refs"
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
